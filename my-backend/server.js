@@ -15,10 +15,17 @@ admin.initializeApp({
 });
 
 app.post("/reset-password", async (req, res) => {
-  const { email, verifyKey } = req.body;
+  // ★ 修改 1: 多接收一個 newPassword 參數
+  const { email, verifyKey, newPassword } = req.body;
 
-  if (!email || !verifyKey) {
+  // ★ 修改 2: 檢查有沒有傳密碼來
+  if (!email || !verifyKey || !newPassword) {
     return res.status(400).json({ success: false, message: "資料不完整" });
+  }
+  
+  // ★ 修改 3: 簡單檢查密碼長度
+  if (newPassword.length < 6) {
+    return res.status(400).json({ success: false, message: "新密碼至少需要 6 位數" });
   }
 
   try {
@@ -31,16 +38,16 @@ app.post("/reset-password", async (req, res) => {
     }
 
     const userData = doc.data();
-    // 這裡比對 "lineUserId" 欄位，您可以改成比對您想要的欄位
     if (userData.lineUserId !== verifyKey) {
-      return res.status(403).json({ success: false, message: "驗證碼錯誤！" });
+      return res.status(403).json({ success: false, message: "驗證碼 (LINE ID) 錯誤！" });
     }
 
+    // ★ 修改 4: 使用 user 傳來的密碼
     await admin.auth().updateUser(uid, {
-      password: "123456" 
+      password: newPassword 
     });
 
-    return res.json({ success: true, message: "驗證成功！密碼已重設為 123456" });
+    return res.json({ success: true, message: "驗證成功！密碼已更新。" });
 
   } catch (error) {
     console.error(error);
